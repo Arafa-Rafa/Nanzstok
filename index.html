@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOKNANZ - Platform Generator & Management Stok Akun</title>
+
+    <!-- ========================================== -->
+    <!-- 1. LIBRARY EKSTERNAL (CDN)                 -->
+    <!-- ========================================== -->
+    <!-- Tailwind CSS Engine CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icon Suite CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- ========================================== -->
+    <!-- 2. CSS STYLES & TAILWIND CONFIGURATION     -->
+    <!-- ========================================== -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        cyanbrand: {
+                            50: '#ecfeff',
+                            100: '#cffafe',
+                            300: '#67e8f9',
+                            400: '#22d3ee',
+                            500: '#06b6d4',
+                            600: '#0891b2',
+                            700: '#0e7490',
+                            900: '#164e63',
+                        },
+                        emeraldbrand: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overflow-x: hidden; 
+        }
+        /* Custom Scrollbar Stylings */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+        }
+
+        /* Utility Hide Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-cyanbrand-500 selection:text-white relative antialiased pb-20 sm:pb-0">
+
+    <!-- Hidden Input File for Database Restore -->
+    <input type="file" id="importBackupFile" accept=".json" class="hidden" onchange="handleRestoreDatabase(event)">
+
+    <!-- ========================================== -->
+    <!-- 3. HTML5 STRUCTURE                         -->
+    <!-- ========================================== -->
+
+    <!-- Login Screen Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-16 -right-16 w-36 h-36 bg-cyanbrand-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-16 -left-16 w-36 h-36 bg-emeraldbrand-500/10 rounded-full blur-3xl"></div>
+            
+            <div class="text-center mb-6 relative">
+                <div class="w-16 h-16 bg-gradient-to-tr from-cyanbrand-600 via-teal-500 to-emeraldbrand-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-cyanbrand-500/20">
+                    <i class="fa-solid fa-bolt text-3xl text-white"></i>
+                </div>
+                <h2 class="text-3xl font-black bg-gradient-to-r from-cyanbrand-400 via-teal-300 to-emeraldbrand-400 bg-clip-text text-transparent tracking-wide">STOKNANZ</h2>
+                <p class="text-xs text-slate-400 mt-1">Sistem Batch Generator & Management Stok Akun</p>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 relative">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Username</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="loginUsername" required placeholder="Masukkan username" class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyanbrand-500 focus:ring-1 focus:ring-cyanbrand-500 transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Password</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="password" id="loginPassword" required placeholder="Masukkan password" class="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-cyanbrand-500 focus:ring-1 focus:ring-cyanbrand-500 transition">
+                    </div>
+                </div>
+
+                <div id="loginError" class="hidden text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>Username atau password salah!</span>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-gradient-to-r from-cyanbrand-600 to-teal-500 hover:from-cyanbrand-500 hover:to-teal-400 text-white font-bold rounded-xl text-sm shadow-lg shadow-cyanbrand-600/20 transition duration-200">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Masuk Sekarang
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 flex items-center justify-between gap-2">
+            <!-- Logo Section (Fixed Visibility) -->
+            <div class="flex items-center space-x-2.5 shrink-0">
+                <div class="p-2 sm:p-2.5 bg-gradient-to-tr from-cyanbrand-600 to-teal-500 rounded-xl shadow-md shadow-cyanbrand-600/20 shrink-0">
+                    <i class="fa-solid fa-bolt text-lg sm:text-xl text-white"></i>
+                </div>
+                <div class="shrink-0">
+                    <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-cyanbrand-400 via-teal-300 to-emeraldbrand-400 bg-clip-text text-transparent whitespace-nowrap tracking-wide">
+                        STOKNANZ
+                    </h1>
+                    <p class="text-[10px] text-slate-400 hidden sm:block whitespace-nowrap">Batch Generator & Stock Manager</p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+                <!-- Generator Modal Button -->
+                <button onclick="openGeneratorModal()" class="bg-gradient-to-r from-cyanbrand-600 to-teal-600 hover:from-cyanbrand-500 hover:to-teal-500 text-white font-bold px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 transition shadow-lg shadow-cyanbrand-600/20 whitespace-nowrap">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span class="hidden sm:inline">⚡ Generator Massal</span>
+                    <span class="sm:hidden text-[11px]">⚡ Generator</span>
+                </button>
+
+                <!-- User Management Button (Owner Only) -->
+                <button id="btnManageUsers" onclick="openUserModal()" title="Kelola Pengguna" class="hidden bg-purple-600/90 hover:bg-purple-500 text-white font-medium p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm flex items-center space-x-1.5 transition shadow-md shrink-0">
+                    <i class="fa-solid fa-users-gear"></i>
+                    <span class="hidden lg:inline">Pengguna</span>
+                </button>
+
+                <!-- Backup & Restore Buttons -->
+                <button onclick="exportUserDatabase()" title="Backup Database ke File JSON" class="hidden sm:flex bg-slate-800 hover:bg-slate-700 text-emeraldbrand-400 border border-slate-700 font-medium p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden xl:inline">Backup</span>
+                </button>
+
+                <button onclick="document.getElementById('importBackupFile').click()" title="Restore / Import Database" class="hidden sm:flex bg-slate-800 hover:bg-slate-700 text-cyanbrand-400 border border-slate-700 font-medium p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-file-import"></i>
+                    <span class="hidden xl:inline">Restore</span>
+                </button>
+
+                <button id="btnAddAccount" onclick="openModal('add')" title="Tambah Akun Manual" class="hidden sm:flex bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium p-2 sm:px-3.5 sm:py-2 rounded-xl text-xs sm:text-sm items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-plus text-cyanbrand-400"></i>
+                    <span class="hidden lg:inline">Tambah</span>
+                </button>
+
+                <button onclick="openLogsModal()" title="Logs Aktivitas" class="hidden md:flex bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm items-center space-x-2 transition">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+                    <span class="hidden md:inline">Logs</span>
+                </button>
+
+                <button onclick="openTrashModal()" title="Folder Sampah" class="hidden md:flex bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm items-center space-x-2 transition relative">
+                    <i class="fa-solid fa-trash-can text-red-400"></i>
+                    <span class="hidden md:inline">Sampah</span>
+                    <span id="trashBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+                </button>
+
+                <!-- User Profile & Logout -->
+                <div class="pl-1.5 sm:pl-2 border-l border-slate-800 flex items-center space-x-2 shrink-0">
+                    <div class="text-right hidden md:block">
+                        <div id="headerUserName" class="text-xs font-semibold text-slate-200">User</div>
+                        <div id="headerUserRole" class="text-[10px] text-cyanbrand-400 font-mono">Role</div>
+                    </div>
+                    <button onclick="handleLogout()" title="Keluar / Logout" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 p-2 rounded-xl text-xs sm:text-sm transition">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 flex-grow w-full box-border">
+        
+        <!-- Activity Log Widget Banner -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 sm:p-4 mb-4 sm:mb-6 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+            <div class="flex items-center space-x-3 min-w-0 w-full md:w-auto">
+                <div class="p-2 sm:p-2.5 bg-cyanbrand-500/10 text-cyanbrand-400 rounded-xl border border-cyanbrand-500/20 shrink-0">
+                    <i class="fa-solid fa-list-check text-base sm:text-lg"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-200">Logs Aktivitas Penggunaan Mandiri</h3>
+                    <p id="latestLogText" class="text-[11px] sm:text-xs text-slate-400 truncate">Belum ada aktivitas tercatat hari ini.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full md:w-auto">
+                <button onclick="exportUserDatabase()" class="flex-1 md:flex-initial text-center text-xs bg-emeraldbrand-500/10 hover:bg-emeraldbrand-500/20 text-emeraldbrand-400 border border-emeraldbrand-500/30 px-3 py-1.5 rounded-xl transition font-medium shrink-0 flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Backup Data
+                </button>
+                <button onclick="openLogsModal()" class="flex-1 md:flex-initial text-center text-xs bg-slate-800 hover:bg-slate-700 text-cyanbrand-400 border border-slate-700 px-3 py-1.5 rounded-xl transition font-medium shrink-0">
+                    Lihat Logs <i class="fa-solid fa-chevron-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5 mb-4 sm:mb-6">
+            <div onclick="setFilterFolder('READY')" class="cursor-pointer glass-card border border-slate-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-sm hover:border-emeraldbrand-500/40 transition">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-emeraldbrand-400 uppercase tracking-wider">Akun Ready</p>
+                    <h3 id="statReady" class="text-xl sm:text-2xl font-black text-emeraldbrand-400 mt-0.5 sm:mt-1">0</h3>
+                </div>
+                <div class="p-2.5 sm:p-3 bg-emeraldbrand-500/10 text-emeraldbrand-400 rounded-xl">
+                    <i class="fa-solid fa-circle-check text-lg sm:text-xl"></i>
+                </div>
+            </div>
+
+            <div onclick="setFilterFolder('CD_15')" class="cursor-pointer glass-card border border-slate-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-sm hover:border-amber-500/40 transition">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-amber-400 uppercase tracking-wider">Tidur 15 Hari</p>
+                    <h3 id="statCD15" class="text-xl sm:text-2xl font-bold text-amber-400 mt-0.5 sm:mt-1">0</h3>
+                </div>
+                <div class="p-2.5 sm:p-3 bg-amber-500/10 text-amber-400 rounded-xl">
+                    <i class="fa-solid fa-moon text-lg sm:text-xl"></i>
+                </div>
+            </div>
+
+            <div onclick="setFilterFolder('CD_30')" class="cursor-pointer glass-card border border-slate-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-sm hover:border-indigo-500/40 transition">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">Tidur 30 Hari</p>
+                    <h3 id="statCD30" class="text-xl sm:text-2xl font-bold text-indigo-400 mt-0.5 sm:mt-1">0</h3>
+                </div>
+                <div class="p-2.5 sm:p-3 bg-indigo-500/10 text-indigo-400 rounded-xl">
+                    <i class="fa-solid fa-bed text-lg sm:text-xl"></i>
+                </div>
+            </div>
+
+            <div onclick="setFilterFolder('CD_CUSTOM')" class="cursor-pointer glass-card border border-slate-800 rounded-2xl p-3 sm:p-4 flex items-center justify-between shadow-sm hover:border-purple-500/40 transition">
+                <div>
+                    <p class="text-[10px] sm:text-[11px] font-semibold text-purple-400 uppercase tracking-wider">Cooldown Custom</p>
+                    <h3 id="statCDCustom" class="text-xl sm:text-2xl font-bold text-purple-400 mt-0.5 sm:mt-1">0</h3>
+                </div>
+                <div class="p-2.5 sm:p-3 bg-purple-500/10 text-purple-400 rounded-xl">
+                    <i class="fa-solid fa-clock text-lg sm:text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toolbar & Filter Tabs -->
+        <div class="glass-card border border-slate-800 rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 shadow-sm space-y-3 sm:space-y-4">
+            <div class="flex flex-col md:flex-row gap-2.5 sm:gap-3 items-center justify-between">
+                <div class="flex items-center gap-2 w-full md:w-auto">
+                    <button onclick="openGeneratorModal()" class="flex-1 md:flex-initial bg-gradient-to-r from-cyanbrand-600 to-teal-600 hover:from-cyanbrand-500 hover:to-teal-500 text-white px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition shadow-md shadow-cyanbrand-600/20">
+                        <i class="fa-solid fa-plus"></i> Tambah Akun / Batch
+                    </button>
+
+                    <button onclick="showReadyPrediction()" class="bg-slate-800 hover:bg-slate-700 text-cyanbrand-300 border border-slate-700 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition whitespace-nowrap">
+                        <i class="fa-solid fa-chart-line"></i> Prediksi Ready
+                    </button>
+                </div>
+
+                <!-- Search Field -->
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="searchInput" oninput="renderAccounts()" placeholder="Cari Dev ID, email, ID, nickname, rank..." class="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-cyanbrand-500 transition">
+                </div>
+            </div>
+
+            <!-- Rank Tabs Filter Bar -->
+            <div class="pt-2 border-t border-slate-800 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
+                <button onclick="setFilterRank('ALL')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-cyanbrand-600 text-white shrink-0" data-rank="ALL">Semua Rank</button>
+                <button onclick="setFilterRank('Warrior')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Warrior">Warrior</button>
+                <button onclick="setFilterRank('Elite')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Elite">Elite</button>
+                <button onclick="setFilterRank('Master')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Master">Master</button>
+                <button onclick="setFilterRank('Grandmaster')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Grandmaster">Grandmaster</button>
+                <button onclick="setFilterRank('Epic')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Epic">Epic</button>
+                <button onclick="setFilterRank('Legend')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Legend">Legend</button>
+                <button onclick="setFilterRank('Mythic')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Mythic">Mythic</button>
+                <button onclick="setFilterRank('Mythic Honor')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Mythic Honor">Mythic Honor</button>
+                <button onclick="setFilterRank('Mythic Glory')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Mythic Glory">Mythic Glory</button>
+                <button onclick="setFilterRank('Immortal')" class="rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700 shrink-0" data-rank="Immortal">Immortal</button>
+            </div>
+        </div>
+
+        <!-- Folder Category Header -->
+        <div class="flex items-center justify-between mb-4 gap-2">
+            <h2 id="folderTitleHeading" class="text-sm sm:text-lg font-bold text-slate-200 flex items-center gap-2 truncate">
+                <i class="fa-solid fa-folder-open text-cyanbrand-400"></i> Menampilkan: Akun Ready
+            </h2>
+            <div class="flex items-center gap-1.5 shrink-0">
+                <button onclick="copyCurrentListBatch()" title="Copy Semua Credential / Dev ID yang Tampil" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition">
+                    <i class="fa-regular fa-copy text-cyanbrand-400"></i> <span class="hidden xs:inline">Copy Massal</span>
+                </button>
+                <span id="accountCountBadge" class="text-xs bg-slate-800 text-cyanbrand-400 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-700">0 Data</span>
+            </div>
+        </div>
+
+        <!-- Accounts Container Cards Grid -->
+        <div id="accountCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <!-- Account Cards rendered dynamically by JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden glass-card border border-slate-800 rounded-2xl py-12 sm:py-16 text-center px-4">
+            <div class="p-3 sm:p-4 inline-block bg-slate-800/50 rounded-full mb-3 text-slate-500">
+                <i class="fa-solid fa-folder-open text-3xl sm:text-4xl"></i>
+            </div>
+            <h3 class="text-base sm:text-lg font-medium text-slate-300">Tidak Ada Data Akun</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">Database stok Anda saat ini masih kosong atau hasil pencarian tidak ditemukan.</p>
+            <button onclick="openGeneratorModal()" class="mt-4 px-4 py-2 bg-cyanbrand-600 hover:bg-cyanbrand-500 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-cyanbrand-600/20">
+                + Generator Batch Massal
+            </button>
+        </div>
+    </main>
+
+    <!-- Bottom Mobile Quick Navigation Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 py-2 px-4 flex justify-around items-center sm:hidden z-40">
+        <button onclick="openGeneratorModal()" class="flex flex-col items-center text-cyanbrand-400 text-[10px] font-medium">
+            <i class="fa-solid fa-wand-magic-sparkles text-lg mb-0.5"></i>
+            <span>Generator</span>
+        </button>
+        <button onclick="openModal('add')" class="flex flex-col items-center text-slate-400 hover:text-white text-[10px] font-medium">
+            <i class="fa-solid fa-plus-circle text-lg mb-0.5 text-emeraldbrand-400"></i>
+            <span>Tambah</span>
+        </button>
+        <button onclick="exportUserDatabase()" class="flex flex-col items-center text-slate-400 hover:text-white text-[10px] font-medium">
+            <i class="fa-solid fa-download text-lg mb-0.5 text-emeraldbrand-400"></i>
+            <span>Backup</span>
+        </button>
+        <button onclick="openLogsModal()" class="flex flex-col items-center text-slate-400 hover:text-white text-[10px] font-medium">
+            <i class="fa-solid fa-clock-rotate-left text-lg mb-0.5 text-amber-400"></i>
+            <span>Logs</span>
+        </button>
+        <button onclick="openTrashModal()" class="flex flex-col items-center text-slate-400 hover:text-white text-[10px] font-medium relative">
+            <i class="fa-solid fa-trash-can text-lg mb-0.5 text-red-400"></i>
+            <span>Sampah</span>
+        </button>
+    </div>
+
+    <!-- MODAL: BATCH GENERATOR MASSAL -->
+    <div id="generatorModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto space-y-4 my-auto">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-cyanbrand-400"></i> STOKNANZ GENERATOR MASSAL
+                </h3>
+                <button onclick="closeGeneratorModal()" class="text-slate-400 hover:text-white transition p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- STEP 1: Tempel Data Akun -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold uppercase text-cyanbrand-400 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-cyanbrand-500/20 text-cyanbrand-400 border border-cyanbrand-500/40 flex items-center justify-center text-[10px]">1</span>
+                        TEMPEL DEV ID / EMAIL AKUN
+                    </h4>
+                    <span class="text-[11px] text-slate-400">Satu baris satu akun, urutan kolom bebas</span>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Rank Default</label>
+                        <select id="genDefaultRank" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:border-cyanbrand-500 outline-none">
+                            <option value="Warrior">Warrior</option>
+                            <option value="Elite">Elite</option>
+                            <option value="Master">Master</option>
+                            <option value="Grandmaster">Grandmaster</option>
+                            <option value="Epic">Epic</option>
+                            <option value="Legend">Legend</option>
+                            <option value="Mythic">Mythic</option>
+                            <option value="Mythic Honor">Mythic Honor</option>
+                            <option value="Mythic Glory">Mythic Glory</option>
+                            <option value="Immortal">Immortal</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Pemisah Kolom</label>
+                        <select id="genDelimiter" onchange="parseBulkText()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:border-cyanbrand-500 outline-none">
+                            <option value="AUTO">AUTO DETECT</option>
+                            <option value="|">Garis Tegak (|)</option>
+                            <option value=",">Koma (,)</option>
+                            <option value=":">Titik Dua (:)</option>
+                            <option value="TAB">Tab / Spasi</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-[10px] text-slate-400 mb-1">Catatan Default</label>
+                        <input type="text" id="genDefaultNote" value="Import akun via StokNanz Generator" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 focus:border-cyanbrand-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[11px] text-slate-300 font-medium">Data Dev ID / Email (Tempel di sini):</label>
+                        <button onclick="insertSampleGeneratorText()" class="text-[10px] text-cyanbrand-400 hover:underline">Isi contoh Dev ID</button>
+                    </div>
+                    <textarea id="genRawInput" oninput="parseBulkText()" rows="5" placeholder="and_0603b276f74f3a51a059a390a681c1df748373f8e53dbnone
+and_123456789abcdefnone | 12156191 | NickPlayer
+and_987654321fedcbanone | 987654321 | Nick Keren | mythic
+akun.stok+01@gmail.com | 555666777 | Sniper | epic" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-100 focus:border-cyanbrand-500 focus:outline-none transition"></textarea>
+                </div>
+
+                <div id="genAnalysisBox" class="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                    <span class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md text-slate-300"><b id="genStatTotalLines">0</b> baris terdeteksi</span>
+                    <span class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md text-emeraldbrand-400"><b id="genStatValid">0</b> Valid</span>
+                    <span class="bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md text-cyanbrand-400">Delimiter: <b id="genStatDelimiter">AUTO</b></span>
+                </div>
+            </div>
+
+            <!-- STEP 2: Folder Tujuan -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                <h4 class="text-xs font-bold uppercase text-cyanbrand-400 flex items-center gap-2">
+                    <span class="w-5 h-5 rounded-full bg-cyanbrand-500/20 text-cyanbrand-400 border border-cyanbrand-500/40 flex items-center justify-center text-[10px]">2</span>
+                    FOLDER TUJUAN
+                </h4>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <label class="border border-slate-800 rounded-xl p-3 flex items-start space-x-3 cursor-pointer hover:bg-slate-800/40 has-[:checked]:border-emeraldbrand-500 has-[:checked]:bg-emeraldbrand-500/10 transition">
+                        <input type="radio" name="genFolderTarget" value="READY" checked onchange="updateGeneratorFolderTarget()" class="mt-1 text-emeraldbrand-500 focus:ring-0">
+                        <div>
+                            <span class="block text-xs font-bold text-emeraldbrand-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check"></i> READY
+                            </span>
+                            <span class="text-[10px] text-slate-400">Akun siap pakai langsung</span>
+                        </div>
+                    </label>
+
+                    <label class="border border-slate-800 rounded-xl p-3 flex items-start space-x-3 cursor-pointer hover:bg-slate-800/40 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10 transition">
+                        <input type="radio" name="genFolderTarget" value="CD_15" onchange="updateGeneratorFolderTarget()" class="mt-1 text-amber-500 focus:ring-0">
+                        <div>
+                            <span class="block text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-moon"></i> Cooldown 15 hari
+                            </span>
+                            <span class="text-[10px] text-slate-400">Tidur 15 hari dari sekarang</span>
+                        </div>
+                    </label>
+
+                    <label class="border border-slate-800 rounded-xl p-3 flex items-start space-x-3 cursor-pointer hover:bg-slate-800/40 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-500/10 transition">
+                        <input type="radio" name="genFolderTarget" value="CD_30" onchange="updateGeneratorFolderTarget()" class="mt-1 text-indigo-500 focus:ring-0">
+                        <div>
+                            <span class="block text-xs font-bold text-indigo-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-bed"></i> Cooldown 30 hari
+                            </span>
+                            <span class="text-[10px] text-slate-400">Tidur 30 hari dari sekarang</span>
+                        </div>
+                    </label>
+
+                    <label class="border border-slate-800 rounded-xl p-3 flex items-start space-x-3 cursor-pointer hover:bg-slate-800/40 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-500/10 transition">
+                        <input type="radio" name="genFolderTarget" value="CD_CUSTOM" onchange="updateGeneratorFolderTarget()" class="mt-1 text-purple-500 focus:ring-0">
+                        <div>
+                            <span class="block text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                                <i class="fa-solid fa-clock"></i> Cooldown custom
+                            </span>
+                            <span class="text-[10px] text-slate-400">Pilih durasi hari sendiri</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="genCustomDaysContainer" class="hidden bg-purple-950/20 p-3 rounded-lg border border-purple-500/30 flex items-center justify-between gap-3">
+                    <label class="text-xs text-purple-300 font-semibold">Durasi Cooldown (Hari):</label>
+                    <input type="number" id="genCustomDays" value="7" min="1" class="w-32 bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white focus:border-purple-500 outline-none">
+                </div>
+
+                <div class="text-[11px] text-cyanbrand-300 bg-cyanbrand-900/30 p-2.5 rounded-lg border border-cyanbrand-500/20 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span id="genFolderNoticeText">Tujuan: READY - Akun langsung masuk folder READY, siap dipakai.</span>
+                </div>
+            </div>
+
+            <!-- STEP 3: Preview & Execute -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold uppercase text-cyanbrand-400 flex items-center gap-2">
+                        <span class="w-5 h-5 rounded-full bg-cyanbrand-500/20 text-cyanbrand-400 border border-cyanbrand-500/40 flex items-center justify-center text-[10px]">3</span>
+                        CEK & SIMPAN
+                    </h4>
+                    <span class="text-xs text-slate-300 font-mono"><b id="genPreviewCount">0</b> akun terdeteksi</span>
+                </div>
+
+                <div class="border border-slate-800 rounded-xl overflow-x-auto max-h-48 overflow-y-auto">
+                    <table class="w-full text-left text-[11px] font-mono text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase text-[10px] sticky top-0 border-b border-slate-800">
+                            <tr>
+                                <th class="py-2 px-3">#</th>
+                                <th class="py-2 px-3">Dev ID / Credential</th>
+                                <th class="py-2 px-3">ID</th>
+                                <th class="py-2 px-3">Nickname</th>
+                                <th class="py-2 px-3">Rank</th>
+                                <th class="py-2 px-3">Catatan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="genPreviewTableBody" class="divide-y divide-slate-800/60">
+                            <tr>
+                                <td colspan="6" class="py-4 text-center text-slate-500 italic">Belum ada data tempelan untuk di-preview</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button onclick="executeGeneratorSave()" class="w-full py-3 bg-gradient-to-r from-emeraldbrand-600 via-teal-600 to-cyanbrand-600 hover:from-emeraldbrand-500 hover:to-cyanbrand-500 text-white font-bold rounded-xl text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span id="genSaveButtonText">SAVE KE DATABASE STOK SAYA</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD / EDIT SINGLE ACCOUNT -->
+    <div id="accountModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <h3 id="modalTitle" class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus text-cyanbrand-400"></i> Tambah Akun
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form id="accountForm" onsubmit="handleFormSubmit(event)" class="mt-4 space-y-4">
+                <input type="hidden" id="editAccountId">
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
+                        Dev ID / Email / Credential <span class="text-red-400">*</span>
+                    </label>
+                    <textarea id="inputCredential" required rows="2" placeholder="Contoh Dev ID: and_0603b276f74f3a51a059a390a681c1df748373f8e53dbnone atau email: user.test+01@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:border-cyanbrand-500 focus:outline-none font-mono break-all"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">ID Akun</label>
+                        <input type="text" id="inputId" placeholder="Contoh: 12156191" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:border-cyanbrand-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Nickname</label>
+                        <input type="text" id="inputNickname" placeholder="Contoh: NickKeren" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:border-cyanbrand-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Rank Akun</label>
+                    <select id="inputRank" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100 focus:border-cyanbrand-500 focus:outline-none">
+                        <option value="Warrior">Warrior</option>
+                        <option value="Elite">Elite</option>
+                        <option value="Master">Master</option>
+                        <option value="Grandmaster">Grandmaster</option>
+                        <option value="Epic">Epic</option>
+                        <option value="Legend">Legend</option>
+                        <option value="Mythic">Mythic</option>
+                        <option value="Mythic Honor">Mythic Honor</option>
+                        <option value="Mythic Glory">Mythic Glory</option>
+                        <option value="Immortal">Immortal</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Status Cooldown</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="border border-slate-800 rounded-xl p-2.5 flex items-center space-x-2 cursor-pointer hover:bg-slate-800/50 has-[:checked]:border-emeraldbrand-500">
+                            <input type="radio" name="statusOption" value="READY" checked onchange="toggleCustomDateInput()" class="text-emeraldbrand-500">
+                            <span class="text-xs text-emeraldbrand-400 font-semibold">Ready</span>
+                        </label>
+                        <label class="border border-slate-800 rounded-xl p-2.5 flex items-center space-x-2 cursor-pointer hover:bg-slate-800/50 has-[:checked]:border-amber-500">
+                            <input type="radio" name="statusOption" value="CD_15" onchange="toggleCustomDateInput()" class="text-amber-500">
+                            <span class="text-xs text-amber-400 font-semibold">CD 15 Hari</span>
+                        </label>
+                        <label class="border border-slate-800 rounded-xl p-2.5 flex items-center space-x-2 cursor-pointer hover:bg-slate-800/50 has-[:checked]:border-indigo-500">
+                            <input type="radio" name="statusOption" value="CD_30" onchange="toggleCustomDateInput()" class="text-indigo-500">
+                            <span class="text-xs text-indigo-400 font-semibold">CD 30 Hari</span>
+                        </label>
+                        <label class="border border-slate-800 rounded-xl p-2.5 flex items-center space-x-2 cursor-pointer hover:bg-slate-800/50 has-[:checked]:border-purple-500">
+                            <input type="radio" name="statusOption" value="CD_CUSTOM" onchange="toggleCustomDateInput()" class="text-purple-500">
+                            <span class="text-xs text-purple-400 font-semibold">Custom CD</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="customCooldownContainer" class="hidden bg-purple-950/30 p-3 rounded-xl border border-purple-500/30">
+                    <label class="block text-xs font-semibold text-purple-300 mb-1">Durasi Hari Custom Cooldown</label>
+                    <input type="number" id="inputCustomDays" min="1" placeholder="Contoh: 7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Catatan Tambahan</label>
+                    <input type="text" id="inputNote" placeholder="A1, Skin Epic, dll" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-100">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs">Batal</button>
+                    <button type="submit" class="px-5 py-2 bg-cyanbrand-600 hover:bg-cyanbrand-500 text-white font-semibold rounded-xl text-xs transition">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TRASH RECYCLE BIN -->
+    <div id="trashModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-trash-can text-red-400"></i> Folder Sampah (Recycle Bin Saya)
+                </h3>
+                <button onclick="closeTrashModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 overflow-y-auto flex-grow">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                        <tr>
+                            <th class="py-2.5 px-3">Dev ID / Credential</th>
+                            <th class="py-2.5 px-3">Rank</th>
+                            <th class="py-2.5 px-3 text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trashTableBody" class="divide-y divide-slate-800">
+                        <!-- Trash items dynamically inserted -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-slate-800 mt-4">
+                <button onclick="emptyTrashAll()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-semibold">Kosongkan Sampah</button>
+                <button onclick="closeTrashModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ACTIVITY LOGS -->
+    <div id="logsModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Logs Aktivitas Saya
+                </h3>
+                <button onclick="closeLogsModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <div class="mt-4 overflow-y-auto flex-grow space-y-2" id="logsContainerList">
+                <!-- Log entries inserted dynamically -->
+            </div>
+
+            <div class="flex justify-end pt-4 border-t border-slate-800 mt-4">
+                <button onclick="closeLogsModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl text-xs">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: OWNER USER MANAGEMENT -->
+    <div id="userManagementModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4 overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl relative">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear text-purple-400"></i> Kelola Pengguna (Owner Only)
+                </h3>
+                <button onclick="closeUserModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <form id="createUserForm" onsubmit="handleCreateUser(event)" class="mt-4 p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                <h4 class="text-xs font-bold uppercase text-purple-300">Buat Akun Pengguna Baru</h4>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <input type="text" id="newUserName" required placeholder="Nama Pengguna" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-white">
+                    <input type="text" id="newUsername" required placeholder="Username Login" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-white">
+                    <input type="password" id="newUserPassword" required placeholder="Password Login" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-white">
+                    <select id="newUserRole" class="bg-slate-900 border border-slate-800 rounded-lg p-2 text-white">
+                        <option value="user">Pengguna (Akses Stok Mandiri)</option>
+                        <option value="owner">Owner (Full Akses + Kelola User)</option>
+                    </select>
+                </div>
+                <button type="submit" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg text-xs">+ Tambahkan Akun Pengguna</button>
+            </form>
+
+            <div class="mt-4">
+                <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Daftar Pengguna Terdaftar</h4>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden max-h-40 overflow-y-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800 text-slate-400 uppercase text-[10px]">
+                            <tr>
+                                <th class="py-2 px-3">Nama</th>
+                                <th class="py-2 px-3">Username</th>
+                                <th class="py-2 px-3">Role</th>
+                                <th class="py-2 px-3 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userListTableBody" class="divide-y divide-slate-800">
+                            <!-- Render users dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION FLOATING -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 border border-slate-800 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 transition-all duration-300 translate-y-20 opacity-0 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emeraldbrand-400 text-lg"></i>
+        <span id="toastMessage" class="text-sm font-medium">Notifikasi</span>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 4. VANILLA JAVASCRIPT APP LOGIC            -->
+    <!-- ========================================== -->
+    <script>
+        // LocalStorage Keys Constants
+        const USERS_STORAGE_KEY = 'stoknanz_users_v1';
+        const SESSION_KEY = 'stoknanz_session_v1';
+
+        // State Variables
+        let accounts = [];
+        let trashAccounts = [];
+        let users = [];
+        let logs = [];
+        let currentUser = null;
+        let currentFolderFilter = 'READY';
+        let currentRankFilter = 'ALL';
+        let parsedGeneratorData = [];
+
+        // Dynamic Storage Key Generators (Isolasi Database Per Username)
+        function getUserStorageKeys() {
+            const username = currentUser ? currentUser.username.toLowerCase() : 'guest';
+            return {
+                ACCOUNTS: `stoknanz_accounts_${username}`,
+                TRASH: `stoknanz_trash_${username}`,
+                LOGS: `stoknanz_logs_${username}`
+            };
+        }
+
+        // Application Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            loadUsersStorage();
+            checkAuthentication();
+
+            // Auto-refresh cooldown status timer every 60s
+            setInterval(() => {
+                if (currentUser) renderAccounts(false);
+            }, 60000);
+        });
+
+        /* --- BACKUP & RESTORE DATABASE SYSTEM --- */
+        function exportUserDatabase() {
+            if (!currentUser) return;
+            const dataToExport = {
+                appName: 'STOKNANZ',
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                username: currentUser.username,
+                accounts: accounts,
+                trashAccounts: trashAccounts,
+                logs: logs
+            };
+
+            const jsonStr = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const dateStr = new Date().toISOString().slice(0, 10);
+            
+            a.href = url;
+            a.download = `stoknanz_backup_${currentUser.username}_${dateStr}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            addLog('BACKUP DATABASE', `Mengeksport data database stok (${accounts.length} akun) ke file JSON.`);
+            showToast('Database berhasil di-backup & diunduh!');
+        }
+
+        function handleRestoreDatabase(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    let targetAccounts = [];
+                    let targetTrash = [];
+                    let targetLogs = [];
+
+                    if (Array.isArray(imported)) {
+                        targetAccounts = imported;
+                    } else if (imported && typeof imported === 'object') {
+                        targetAccounts = imported.accounts || [];
+                        targetTrash = imported.trashAccounts || [];
+                        targetLogs = imported.logs || [];
+                    }
+
+                    if (confirm(`Pulihkan database dari file backup (${targetAccounts.length} akun)? Data Anda saat ini akan diperbarui dengan data dari file backup.`)) {
+                        accounts = targetAccounts;
+                        trashAccounts = targetTrash;
+                        logs = targetLogs.length > 0 ? targetLogs : logs;
+
+                        saveUserAccountsStorage();
+                        renderAccounts();
+                        renderLogsWidget();
+                        addLog('RESTORE DATABASE', `Memulihkan database dari file JSON backup (${targetAccounts.length} data).`);
+                        showToast('Database berhasil dipulihkan!');
+                    }
+                } catch (err) {
+                    showToast('Format file backup JSON tidak valid!');
+                }
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        /* --- AUTHENTICATION & ISOLATED DATA LOADING --- */
+        function loadUsersStorage() {
+            const raw = localStorage.getItem(USERS_STORAGE_KEY);
+            if (raw) { try { users = JSON.parse(raw); } catch (e) { users = []; } }
+            if (!users || users.length === 0) {
+                users = [{
+                    id: 'usr_owner',
+                    name: 'Owner Utama',
+                    username: 'owner',
+                    password: 'admin123',
+                    role: 'owner'
+                }];
+                saveUsersStorage();
+            }
+        }
+
+        function saveUsersStorage() {
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+        }
+
+        function checkAuthentication() {
+            const sessionRaw = localStorage.getItem(SESSION_KEY);
+            if (sessionRaw) {
+                try {
+                    const sessionUser = JSON.parse(sessionRaw);
+                    const validUser = users.find(u => u.username.toLowerCase() === sessionUser.username.toLowerCase());
+                    if (validUser) {
+                        currentUser = validUser;
+                        applyUserPermissions();
+                        loadUserIsolatedData();
+                        document.getElementById('loginOverlay').classList.add('hidden');
+                        return;
+                    }
+                } catch(e) {}
+            }
+            document.getElementById('loginOverlay').classList.remove('hidden');
+        }
+
+        function loadUserIsolatedData() {
+            if (!currentUser) return;
+            const keys = getUserStorageKeys();
+
+            // Load Accounts for this specific user
+            const rawAcc = localStorage.getItem(keys.ACCOUNTS);
+            if (rawAcc) { try { accounts = JSON.parse(rawAcc); } catch(e) { accounts = []; } }
+            else {
+                accounts = [
+                    { id: 'acc_demo1', credential: 'and_0603b276f74f3a51a059a390a681c1df748373f8e53dbnone', accId: '12156191', nickname: 'DemoPlayer', rank: 'Mythic Glory', statusType: 'READY', createdDate: new Date().toISOString(), cooldownEnd: null, note: 'Contoh stok Dev ID awal anda' }
+                ];
+                saveUserAccountsStorage();
+            }
+
+            // Load Trash for this specific user
+            const rawTrash = localStorage.getItem(keys.TRASH);
+            if (rawTrash) { try { trashAccounts = JSON.parse(rawTrash); } catch(e) { trashAccounts = []; } }
+            else { trashAccounts = []; }
+
+            // Load Logs for this specific user
+            const rawLogs = localStorage.getItem(keys.LOGS);
+            if (rawLogs) { try { logs = JSON.parse(rawLogs); } catch(e) { logs = []; } }
+            else { logs = []; }
+
+            renderLogsWidget();
+            renderAccounts();
+            updateTrashBadge();
+        }
+
+        function saveUserAccountsStorage() {
+            if (!currentUser) return;
+            const keys = getUserStorageKeys();
+            localStorage.setItem(keys.ACCOUNTS, JSON.stringify(accounts));
+            localStorage.setItem(keys.TRASH, JSON.stringify(trashAccounts));
+            updateTrashBadge();
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('loginUsername').value.trim().toLowerCase();
+            const passwordInput = document.getElementById('loginPassword').value.trim();
+            const user = users.find(u => u.username.toLowerCase() === usernameInput && u.password === passwordInput);
+
+            if (user) {
+                currentUser = user;
+                localStorage.setItem(SESSION_KEY, JSON.stringify({ username: user.username, role: user.role }));
+                document.getElementById('loginError').classList.add('hidden');
+                document.getElementById('loginOverlay').classList.add('hidden');
+                
+                applyUserPermissions();
+                loadUserIsolatedData();
+                addLog('LOGIN', `Sesi pengguna ${user.name} dibuka.`);
+                showToast(`Selamat datang, ${user.name}!`);
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        function handleLogout() {
+            if (currentUser) {
+                addLog('LOGOUT', `Sesi pengguna ${currentUser.name} ditutup.`);
+            }
+            localStorage.removeItem(SESSION_KEY);
+            currentUser = null;
+            accounts = [];
+            trashAccounts = [];
+            logs = [];
+            document.getElementById('loginOverlay').classList.remove('hidden');
+            showToast('Anda telah logout');
+        }
+
+        function applyUserPermissions() {
+            if (!currentUser) return;
+            document.getElementById('headerUserName').innerText = currentUser.name;
+            document.getElementById('headerUserRole').innerText = currentUser.role === 'owner' ? '👑 Owner' : '👤 Pengguna';
+            const isOwner = currentUser.role === 'owner';
+            document.getElementById('btnManageUsers').classList.toggle('hidden', !isOwner);
+        }
+
+        /* --- LOGS SYSTEM --- */
+        function addLog(action, detail) {
+            if (!currentUser) return;
+            const keys = getUserStorageKeys();
+            const newLog = {
+                id: 'log_' + Date.now(),
+                action,
+                detail,
+                time: new Date().toISOString()
+            };
+            logs.unshift(newLog);
+            if (logs.length > 50) logs.pop();
+            localStorage.setItem(keys.LOGS, JSON.stringify(logs));
+            renderLogsWidget();
+        }
+
+        function renderLogsWidget() {
+            const latestText = document.getElementById('latestLogText');
+            if (logs.length > 0) {
+                latestText.innerHTML = `<b class="text-cyanbrand-400">[${logs[0].action}]</b> ${escapeHtml(logs[0].detail)}`;
+            } else {
+                latestText.innerText = 'Belum ada aktivitas baru.';
+            }
+
+            const logsList = document.getElementById('logsContainerList');
+            if (logsList) {
+                logsList.innerHTML = '';
+                logs.forEach(l => {
+                    const div = document.createElement('div');
+                    div.className = 'bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs';
+                    div.innerHTML = `
+                        <div class="flex items-center justify-between font-mono text-[10px] text-slate-400 mb-1">
+                            <span class="text-cyanbrand-400 font-bold">${escapeHtml(l.action)}</span>
+                            <span>${new Date(l.time).toLocaleTimeString('id-ID')}</span>
+                        </div>
+                        <p class="text-slate-200 break-all">${escapeHtml(l.detail)}</p>
+                    `;
+                    logsList.appendChild(div);
+                });
+            }
+        }
+
+        function openLogsModal() { document.getElementById('logsModal').classList.remove('hidden'); }
+        function closeLogsModal() { document.getElementById('logsModal').classList.add('hidden'); }
+
+        /* --- TRASH BADGE UPDATE --- */
+        function updateTrashBadge() {
+            const badge = document.getElementById('trashBadge');
+            if (trashAccounts.length > 0) {
+                badge.innerText = trashAccounts.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        /* --- BATCH GENERATOR MASSAL LOGIC --- */
+        function openGeneratorModal() {
+            document.getElementById('generatorModal').classList.remove('hidden');
+            parseBulkText();
+        }
+
+        function closeGeneratorModal() {
+            document.getElementById('generatorModal').classList.add('hidden');
+        }
+
+        function insertSampleGeneratorText() {
+            const sampleText = 
+`and_0603b276f74f3a51a059a390a681c1df748373f8e53dbnone
+and_123456789abcdefnone | 12156191 | NickPlayer
+and_987654321fedcbanone | 987654321 | Nick Keren | mythic
+and_112233445566778899 555666777 Sniper epic
+akun.test+01@gmail.com | 998877665 | ProPlayer | immortal`;
+            document.getElementById('genRawInput').value = sampleText;
+            parseBulkText();
+        }
+
+        function parseBulkText() {
+            const rawText = document.getElementById('genRawInput').value;
+            const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            const selectedDelimiter = document.getElementById('genDelimiter').value;
+            const defaultRank = document.getElementById('genDefaultRank').value;
+            const defaultNote = document.getElementById('genDefaultNote').value.trim();
+
+            parsedGeneratorData = [];
+            let validCount = 0;
+
+            lines.forEach((line, index) => {
+                let parts = [];
+
+                if (selectedDelimiter === 'AUTO') {
+                    if (line.includes('|')) parts = line.split('|');
+                    else if (line.includes(',')) parts = line.split(',');
+                    else if (line.includes(':')) parts = line.split(':');
+                    else parts = line.split(/\s+/);
+                } else if (selectedDelimiter === 'TAB') {
+                    parts = line.split(/\s+/);
+                } else {
+                    parts = line.split(selectedDelimiter);
+                }
+
+                parts = parts.map(p => p.trim()).filter(p => p.length > 0);
+
+                if (parts.length > 0) {
+                    const devIdOrCred = parts[0];
+                    let accId = parts[1] || Math.floor(10000000 + Math.random() * 90000000).toString();
+                    let nickname = parts[2] || 'null';
+                    let rank = defaultRank;
+                    let note = defaultNote;
+
+                    const ranksList = ['warrior', 'elite', 'master', 'grandmaster', 'epic', 'legend', 'mythic', 'mythic honor', 'mythic glory', 'immortal'];
+                    parts.forEach(part => {
+                        const lower = part.toLowerCase();
+                        const foundRank = ranksList.find(r => r === lower);
+                        if (foundRank) {
+                            rank = foundRank.charAt(0).toUpperCase() + foundRank.slice(1);
+                        }
+                    });
+
+                    parsedGeneratorData.push({
+                        idx: index + 1,
+                        credential: devIdOrCred,
+                        accId: accId,
+                        nickname: nickname,
+                        rank: rank,
+                        note: note
+                    });
+                    validCount++;
+                }
+            });
+
+            document.getElementById('genStatTotalLines').innerText = lines.length;
+            document.getElementById('genStatValid').innerText = validCount;
+            document.getElementById('genStatDelimiter').innerText = selectedDelimiter;
+            document.getElementById('genPreviewCount').innerText = parsedGeneratorData.length;
+
+            renderGeneratorPreviewTable();
+        }
+
+        function renderGeneratorPreviewTable() {
+            const tbody = document.getElementById('genPreviewTableBody');
+            tbody.innerHTML = '';
+
+            if (parsedGeneratorData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-slate-500 italic">Belum ada data tempelan untuk di-preview</td></tr>';
+                return;
+            }
+
+            parsedGeneratorData.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/50';
+                tr.innerHTML = `
+                    <td class="py-2 px-3 text-slate-500">${item.idx}</td>
+                    <td class="py-2 px-3 text-cyanbrand-300 font-bold break-all max-w-[180px]">${escapeHtml(item.credential)}</td>
+                    <td class="py-2 px-3 text-slate-400">${escapeHtml(item.accId)}</td>
+                    <td class="py-2 px-3 text-slate-300">${escapeHtml(item.nickname)}</td>
+                    <td class="py-2 px-3"><span class="bg-slate-800 text-amber-300 px-1.5 py-0.5 rounded text-[10px]">${escapeHtml(item.rank)}</span></td>
+                    <td class="py-2 px-3 text-slate-400 max-w-[120px] truncate">${escapeHtml(item.note)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateGeneratorFolderTarget() {
+            const selected = document.querySelector('input[name="genFolderTarget"]:checked')?.value;
+            const customContainer = document.getElementById('genCustomDaysContainer');
+            const noticeText = document.getElementById('genFolderNoticeText');
+
+            if (selected === 'CD_CUSTOM') {
+                customContainer.classList.remove('hidden');
+            } else {
+                customContainer.classList.add('hidden');
+            }
+
+            if (selected === 'READY') noticeText.innerText = 'Tujuan: READY - Akun langsung masuk folder READY, bisa langsung dipakai.';
+            else if (selected === 'CD_15') noticeText.innerText = 'Tujuan: COOLDOWN 15 HARI - Tidur 15 hari dari sekarang, auto ke READY setelah habis.';
+            else if (selected === 'CD_30') noticeText.innerText = 'Tujuan: COOLDOWN 30 HARI - Tidur 30 hari dari sekarang, auto ke READY setelah habis.';
+            else noticeText.innerText = 'Tujuan: COOLDOWN CUSTOM - Atur durasi hari pilihan Anda.';
+
+            document.getElementById('genSaveButtonText').innerText = `SAVE KE DATABASE STOK SAYA ( ${parsedGeneratorData.length} ) - ${getLabelStatus(selected).toUpperCase()}`;
+        }
+
+        function executeGeneratorSave() {
+            if (parsedGeneratorData.length === 0) {
+                showToast('Tempelkan data akun/Dev ID terlebih dahulu!');
+                return;
+            }
+
+            const targetFolder = document.querySelector('input[name="genFolderTarget"]:checked').value;
+            const now = new Date();
+            let cooldownEnd = null;
+
+            if (targetFolder === 'CD_15') {
+                cooldownEnd = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toISOString();
+            } else if (targetFolder === 'CD_30') {
+                cooldownEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+            } else if (targetFolder === 'CD_CUSTOM') {
+                const days = parseInt(document.getElementById('genCustomDays').value) || 7;
+                cooldownEnd = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+            }
+
+            parsedGeneratorData.forEach(item => {
+                const newAcc = {
+                    id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                    credential: item.credential,
+                    accId: item.accId,
+                    nickname: item.nickname,
+                    rank: item.rank,
+                    statusType: targetFolder,
+                    createdDate: now.toISOString(),
+                    cooldownEnd: cooldownEnd,
+                    note: item.note
+                };
+                accounts.unshift(newAcc);
+            });
+
+            saveUserAccountsStorage();
+            addLog('BATCH GENERATOR', `Import massal ${parsedGeneratorData.length} akun ke database stok.`);
+            renderAccounts();
+            closeGeneratorModal();
+            showToast(`Berhasil simpan ${parsedGeneratorData.length} akun ke ${getLabelStatus(targetFolder)}!`);
+            document.getElementById('genRawInput').value = '';
+            parseBulkText();
+        }
+
+        /* --- RENDERING ACCOUNTS LIST & CARDS --- */
+        function setFilterFolder(folder) {
+            currentFolderFilter = folder;
+            renderAccounts();
+        }
+
+        function setFilterRank(rank) {
+            currentRankFilter = rank;
+            document.querySelectorAll('.rank-tab-btn').forEach(btn => {
+                if (btn.getAttribute('data-rank') === rank) {
+                    btn.className = 'rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-cyanbrand-600 text-white';
+                } else {
+                    btn.className = 'rank-tab-btn px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition bg-slate-800 text-slate-300 hover:bg-slate-700';
+                }
+            });
+            renderAccounts();
+        }
+
+        function renderAccounts(updateStats = true) {
+            const container = document.getElementById('accountCardsContainer');
+            const emptyState = document.getElementById('emptyState');
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const now = new Date();
+
+            container.innerHTML = '';
+
+            let readyCount = 0;
+            let cd15Count = 0;
+            let cd30Count = 0;
+            let cdCustomCount = 0;
+
+            let filteredList = accounts.filter(acc => {
+                let isActuallyReady = acc.statusType === 'READY';
+                if (!isActuallyReady && acc.cooldownEnd) {
+                    if (new Date(acc.cooldownEnd) <= now) {
+                        isActuallyReady = true;
+                    }
+                }
+
+                if (isActuallyReady) readyCount++;
+                else {
+                    if (acc.statusType === 'CD_15') cd15Count++;
+                    else if (acc.statusType === 'CD_30') cd30Count++;
+                    else cdCustomCount++;
+                }
+
+                const matchesSearch = (acc.credential || '').toLowerCase().includes(search) ||
+                                      (acc.note || '').toLowerCase().includes(search) ||
+                                      (acc.accId || '').toLowerCase().includes(search) ||
+                                      (acc.nickname || '').toLowerCase().includes(search) ||
+                                      (acc.rank || '').toLowerCase().includes(search);
+
+                let matchesFolder = true;
+                if (currentFolderFilter === 'READY') matchesFolder = isActuallyReady;
+                else matchesFolder = (acc.statusType === currentFolderFilter && !isActuallyReady);
+
+                let matchesRank = true;
+                if (currentRankFilter !== 'ALL') matchesRank = (acc.rank || '') === currentRankFilter;
+
+                return matchesSearch && matchesFolder && matchesRank;
+            });
+
+            document.getElementById('statReady').innerText = readyCount;
+            document.getElementById('statCD15').innerText = cd15Count;
+            document.getElementById('statCD30').innerText = cd30Count;
+            document.getElementById('statCDCustom').innerText = cdCustomCount;
+
+            document.getElementById('folderTitleHeading').innerHTML = `<i class="fa-solid fa-folder-open text-cyanbrand-400"></i> Menampilkan: ${getLabelStatus(currentFolderFilter)}`;
+            document.getElementById('accountCountBadge').innerText = `${filteredList.length} Data`;
+
+            if (filteredList.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+
+                filteredList.forEach(acc => {
+                    let isReady = acc.statusType === 'READY';
+                    let cooldownBadgeHTML = '';
+
+                    if (acc.cooldownEnd) {
+                        const endDate = new Date(acc.cooldownEnd);
+                        const diffTime = endDate - now;
+                        if (diffTime <= 0) {
+                            isReady = true;
+                        } else {
+                            const daysLeft = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                            const hoursLeft = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            cooldownBadgeHTML = `
+                                <span class="text-xs font-mono font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    <i class="fa-solid fa-hourglass-half text-[10px]"></i> Sisa ${daysLeft}H ${hoursLeft}J
+                                </span>
+                            `;
+                        }
+                    }
+
+                    if (isReady) {
+                        cooldownBadgeHTML = `
+                            <span class="text-xs font-semibold text-emeraldbrand-400 bg-emeraldbrand-500/10 border border-emeraldbrand-500/20 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check text-[10px]"></i> Ready
+                            </span>
+                        `;
+                    }
+
+                    const isDevId = (acc.credential || '').toLowerCase().startsWith('and_');
+                    const credentialLabel = isDevId ? 'Dev ID' : 'Cred/Email';
+
+                    const card = document.createElement('div');
+                    card.className = 'glass-card border border-slate-800 hover:border-slate-700 rounded-2xl p-4 shadow-md transition flex flex-col justify-between space-y-3';
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-slate-300 font-mono">${escapeHtml(acc.nickname || 'null')}</span>
+                                    <span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-md">${escapeHtml(acc.rank || 'Warrior')}</span>
+                                </div>
+                                ${cooldownBadgeHTML}
+                            </div>
+
+                            <div class="mt-3 space-y-1 font-mono text-xs">
+                                <div class="flex items-start justify-between text-slate-300 gap-2">
+                                    <span class="break-all"><b class="text-slate-500">${credentialLabel}:</b> <span class="text-cyanbrand-300">${escapeHtml(acc.credential)}</span></span>
+                                    <button onclick="copyToClipboard('${escapeJsString(acc.credential)}')" title="Salin Data" class="text-cyanbrand-400 hover:text-cyanbrand-300 p-1 shrink-0">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </div>
+                                <div><b class="text-slate-500">ID:</b> <span class="text-slate-300">${escapeHtml(acc.accId || 'null')}</span></div>
+                                <div class="text-[11px] text-slate-400"><b class="text-slate-500">Catatan:</b> ${escapeHtml(acc.note || 'Import via StokNanz Generator')}</div>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-800 flex items-center gap-1.5 text-xs">
+                            <button onclick="copyToClipboard('${escapeJsString(acc.credential)}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold transition">
+                                Copy Data
+                            </button>
+                            <button onclick="openModal('edit', '${acc.id}')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-lg font-semibold transition">
+                                Edit
+                            </button>
+                            ${!isReady ? `
+                                <button onclick="markAsReady('${acc.id}')" class="bg-emeraldbrand-500/20 hover:bg-emeraldbrand-500/30 text-emeraldbrand-400 border border-emeraldbrand-500/30 px-2.5 py-1.5 rounded-lg font-semibold transition">
+                                    Set Ready
+                                </button>
+                            ` : `
+                                <button onclick="setAccountCD('${acc.id}', 15)" class="bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/20 px-2 py-1 rounded-lg text-[11px] font-semibold">CD15</button>
+                                <button onclick="setAccountCD('${acc.id}', 30)" class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 px-2 py-1 rounded-lg text-[11px] font-semibold">CD30</button>
+                            `}
+                            <button onclick="moveToTrash('${acc.id}')" title="Buang ke Sampah" class="ml-auto text-red-400 hover:text-red-300 p-1.5 rounded-lg">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+        }
+
+        /* --- TRASH BIN SYSTEM --- */
+        function moveToTrash(id) {
+            const accIndex = accounts.findIndex(a => a.id === id);
+            if (accIndex !== -1) {
+                const deletedAcc = accounts.splice(accIndex, 1)[0];
+                trashAccounts.unshift(deletedAcc);
+                saveUserAccountsStorage();
+                renderAccounts();
+                addLog('HAPUS', `Memindahkan akun ${deletedAcc.credential} ke Sampah.`);
+                showToast('Akun dipindahkan ke Sampah');
+            }
+        }
+
+        function openTrashModal() {
+            renderTrashList();
+            document.getElementById('trashModal').classList.remove('hidden');
+        }
+
+        function closeTrashModal() {
+            document.getElementById('trashModal').classList.add('hidden');
+        }
+
+        function renderTrashList() {
+            const tbody = document.getElementById('trashTableBody');
+            tbody.innerHTML = '';
+            if (trashAccounts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500 italic">Folder sampah kosong</td></tr>';
+                return;
+            }
+            trashAccounts.forEach(acc => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-900/50';
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-mono text-slate-200 break-all max-w-[200px]">${escapeHtml(acc.credential)}</td>
+                    <td class="py-2.5 px-3 text-slate-400">${escapeHtml(acc.rank || 'Warrior')}</td>
+                    <td class="py-2.5 px-3 text-center space-x-2">
+                        <button onclick="restoreFromTrash('${acc.id}')" class="text-emeraldbrand-400 hover:underline font-semibold text-xs">Pulihkan</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function restoreFromTrash(id) {
+            const index = trashAccounts.findIndex(a => a.id === id);
+            if (index !== -1) {
+                const restored = trashAccounts.splice(index, 1)[0];
+                accounts.unshift(restored);
+                saveUserAccountsStorage();
+                renderTrashList();
+                renderAccounts();
+                addLog('RESTORE', `Memulihkan akun ${restored.credential} dari Sampah.`);
+                showToast('Akun berhasil dipulihkan!');
+            }
+        }
+
+        function emptyTrashAll() {
+            if (trashAccounts.length === 0) return;
+            if (confirm('Kosongkan semua item di folder sampah secara permanen?')) {
+                trashAccounts = [];
+                saveUserAccountsStorage();
+                renderTrashList();
+                showToast('Sampah berhasil dikosongkan!');
+            }
+        }
+
+        /* --- ACTION HELPERS --- */
+        function markAsReady(id) {
+            const acc = accounts.find(a => a.id === id);
+            if (acc) {
+                acc.statusType = 'READY';
+                acc.cooldownEnd = null;
+                saveUserAccountsStorage();
+                renderAccounts();
+                addLog('STATUS', `Mengubah akun ${acc.credential} ke READY.`);
+                showToast('Status diubah ke Ready!');
+            }
+        }
+
+        function setAccountCD(id, days) {
+            const acc = accounts.find(a => a.id === id);
+            if (acc) {
+                acc.statusType = days === 15 ? 'CD_15' : 'CD_30';
+                acc.cooldownEnd = new Date(Date.now() + days * 86400000).toISOString();
+                saveUserAccountsStorage();
+                renderAccounts();
+                addLog('SET COOLDOWN', `Mengatur akun ${acc.credential} ke CD ${days} Hari.`);
+                showToast(`Akun masuk Cooldown ${days} Hari`);
+            }
+        }
+
+        function copyCurrentListBatch() {
+            const credentials = accounts.map(a => a.credential).join('\n');
+            if (!credentials) { showToast('Tidak ada data untuk dicopy'); return; }
+            copyToClipboard(credentials);
+            addLog('COPY BATCH', `Copy massal ${accounts.length} data Dev ID/Credential.`);
+            showToast('Semua data Dev ID / Credential berhasil dicopy!');
+        }
+
+        function showReadyPrediction() {
+            setFilterFolder('CD_15');
+            showToast('Menampilkan daftar akun yang akan segera Ready');
+        }
+
+        /* --- SINGLE ACCOUNT MODAL FORM --- */
+        function openModal(mode = 'add', id = null) {
+            const modal = document.getElementById('accountModal');
+            document.getElementById('accountForm').reset();
+            if (mode === 'add') {
+                document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-user-plus text-cyanbrand-400"></i> Tambah Akun';
+                document.getElementById('editAccountId').value = '';
+            } else if (mode === 'edit' && id) {
+                const acc = accounts.find(a => a.id === id);
+                if (!acc) return;
+                document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-cyanbrand-400"></i> Edit Akun';
+                document.getElementById('editAccountId').value = acc.id;
+                document.getElementById('inputCredential').value = acc.credential || '';
+                document.getElementById('inputId').value = acc.accId || '';
+                document.getElementById('inputNickname').value = acc.nickname || '';
+                document.getElementById('inputRank').value = acc.rank || 'Warrior';
+                document.getElementById('inputNote').value = acc.note || '';
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('accountModal').classList.add('hidden'); }
+
+        function toggleCustomDateInput() {
+            const selectedStatus = document.querySelector('input[name="statusOption"]:checked')?.value;
+            document.getElementById('customCooldownContainer').classList.toggle('hidden', selectedStatus !== 'CD_CUSTOM');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editAccountId').value;
+            const credential = document.getElementById('inputCredential').value.trim();
+            const accId = document.getElementById('inputId').value.trim() || 'null';
+            const nickname = document.getElementById('inputNickname').value.trim() || 'null';
+            const rank = document.getElementById('inputRank').value;
+            const statusOption = document.querySelector('input[name="statusOption"]:checked').value;
+            const note = document.getElementById('inputNote').value.trim() || 'Import via StokNanz Generator';
+
+            let cooldownEnd = null;
+            const now = new Date();
+
+            if (statusOption === 'CD_15') cooldownEnd = new Date(now.getTime() + 15 * 86400000).toISOString();
+            else if (statusOption === 'CD_30') cooldownEnd = new Date(now.getTime() + 30 * 86400000).toISOString();
+            else if (statusOption === 'CD_CUSTOM') {
+                const days = parseInt(document.getElementById('inputCustomDays').value) || 1;
+                cooldownEnd = new Date(now.getTime() + days * 86400000).toISOString();
+            }
+
+            if (editId) {
+                const index = accounts.findIndex(a => a.id === editId);
+                if (index !== -1) {
+                    accounts[index] = { ...accounts[index], credential, accId, nickname, rank, statusType: statusOption, cooldownEnd, note };
+                    showToast('Data akun diperbarui!');
+                }
+            } else {
+                const newAcc = { id: 'acc_' + Date.now(), credential, accId, nickname, rank, statusType: statusOption, createdDate: now.toISOString(), cooldownEnd, note };
+                accounts.unshift(newAcc);
+                showToast('Akun baru ditambahkan!');
+            }
+
+            saveUserAccountsStorage();
+            renderAccounts();
+            closeModal();
+        }
+
+        /* --- USER MANAGEMENT (OWNER ONLY) --- */
+        function openUserModal() {
+            if (!currentUser || currentUser.role !== 'owner') return;
+            renderUserList();
+            document.getElementById('userManagementModal').classList.remove('hidden');
+        }
+        function closeUserModal() { document.getElementById('userManagementModal').classList.add('hidden'); }
+
+        function handleCreateUser(e) {
+            e.preventDefault();
+            const name = document.getElementById('newUserName').value.trim();
+            const username = document.getElementById('newUsername').value.trim().toLowerCase();
+            const password = document.getElementById('newUserPassword').value.trim();
+            const role = document.getElementById('newUserRole').value;
+
+            if (users.some(u => u.username.toLowerCase() === username)) {
+                showToast('Username sudah digunakan!');
+                return;
+            }
+
+            users.push({ id: 'usr_' + Date.now(), name, username, password, role });
+            saveUsersStorage();
+            renderUserList();
+            document.getElementById('createUserForm').reset();
+            showToast(`Pengguna "${username}" ditambahkan!`);
+        }
+
+        function renderUserList() {
+            const tbody = document.getElementById('userListTableBody');
+            tbody.innerHTML = '';
+            users.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="py-2 px-3 font-semibold">${escapeHtml(u.name)}</td>
+                    <td class="py-2 px-3 font-mono text-slate-400">${escapeHtml(u.username)}</td>
+                    <td class="py-2 px-3"><span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${u.role === 'owner' ? 'bg-purple-500/20 text-purple-300' : 'bg-cyanbrand-500/20 text-cyanbrand-300'}">${u.role}</span></td>
+                    <td class="py-2 px-3 text-center">${u.username.toLowerCase() !== currentUser.username.toLowerCase() ? `<button onclick="deleteUser('${u.id}')" class="text-red-400 p-1"><i class="fa-solid fa-trash"></i></button>` : '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteUser(id) {
+            users = users.filter(u => u.id !== id);
+            saveUsersStorage();
+            renderUserList();
+            showToast('Pengguna dihapus');
+        }
+
+        /* --- UTILS & HELPERS --- */
+        function copyToClipboard(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            addLog('COPY DATA', `Akses salin detail: ${text.substring(0, 30)}...`);
+            showToast('Berhasil disalin ke clipboard!');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
+        }
+
+        function getLabelStatus(type) {
+            switch(type) {
+                case 'READY': return 'Akun Ready';
+                case 'CD_15': return 'Tidur 15 Hari';
+                case 'CD_30': return 'Tidur 30 Hari';
+                case 'CD_CUSTOM': return 'Cooldown Custom';
+                default: return 'Akun Ready';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function escapeJsString(str) {
+            if (!str) return '';
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
+        }
+    </script>
+</body>
+</html>
