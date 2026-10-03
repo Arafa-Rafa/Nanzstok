@@ -41,17 +41,33 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
-    <!-- Firebase SDK Imports -->
+    <!-- Firebase SDK Imports & Custom Config -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Your Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDxDaMcMnwuzDQex32g5xmwkvFRlQsDJSo",
+            authDomain: "stoknanz-cloud.firebaseapp.com",
+            projectId: "stoknanz-cloud",
+            storageBucket: "stoknanz-cloud.firebasestorage.app",
+            messagingSenderId: "874957138016",
+            appId: "1:874957138016:web:0c191fa79c913dd47afb05",
+            measurementId: "G-W04HDTD89E"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
         // Expose Firebase globals for the app script
         window.firebaseModules = {
             initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
-            getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot
+            getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, db, auth
         };
+
         window.dispatchEvent(new Event('firebase-ready'));
     </script>
 </head>
@@ -60,7 +76,7 @@
     <!-- Hidden Backup Input -->
     <input type="file" id="importBackupFile" accept=".json" class="hidden" onchange="handleRestoreDatabase(event)">
 
-    <!-- Login Screen Overlay -->
+    <!-- Login Screen Overlay (SessionStorage / Auto-login reset on exit) -->
     <div id="loginOverlay" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden">
             <div class="absolute -top-16 -right-16 w-36 h-36 bg-cyanbrand-500/10 rounded-full blur-3xl"></div>
@@ -71,7 +87,7 @@
                     <i class="fa-solid fa-bolt text-3xl text-white"></i>
                 </div>
                 <h2 class="text-3xl font-black bg-gradient-to-r from-cyanbrand-400 via-teal-300 to-emeraldbrand-400 bg-clip-text text-transparent tracking-wide">STOKNANZ</h2>
-                <p class="text-xs text-slate-400 mt-1">Cloud Sync Batch Generator & Stock Manager</p>
+                <p class="text-xs text-slate-400 mt-1">Cloud Sync Real-Time Multi-Device</p>
             </div>
 
             <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4 relative" method="POST">
@@ -182,8 +198,8 @@
                     <i class="fa-solid fa-cloud text-base sm:text-lg"></i>
                 </div>
                 <div class="min-w-0 flex-1">
-                    <h3 class="text-xs sm:text-sm font-bold text-slate-200">Cloud Sync Active (Real-Time Database)</h3>
-                    <p id="latestLogText" class="text-[11px] sm:text-xs text-slate-400 truncate">Menghubungkan ke server awan...</p>
+                    <h3 class="text-xs sm:text-sm font-bold text-slate-200">Firebase Cloud Sync Active (Real-Time)</h3>
+                    <p id="latestLogText" class="text-[11px] sm:text-xs text-slate-400 truncate">Menghubungkan ke server cloud stoknanz...</p>
                 </div>
             </div>
             <div class="flex items-center gap-2 w-full md:w-auto">
@@ -354,25 +370,13 @@
                     <div>
                         <label class="block text-[10px] text-slate-400 mb-1">Rank Default</label>
                         <select id="genDefaultRank" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 outline-none">
-                            <option value="Warrior">Warrior</option>
-                            <option value="Elite">Elite</option>
-                            <option value="Master">Master</option>
-                            <option value="Grandmaster">Grandmaster</option>
-                            <option value="Epic">Epic</option>
-                            <option value="Legend">Legend</option>
-                            <option value="Mythic">Mythic</option>
-                            <option value="Mythic Honor">Mythic Honor</option>
-                            <option value="Mythic Glory">Mythic Glory</option>
-                            <option value="Immortal">Immortal</option>
+                            <option value="Warrior">Warrior</option><option value="Elite">Elite</option><option value="Master">Master</option><option value="Grandmaster">Grandmaster</option><option value="Epic">Epic</option><option value="Legend">Legend</option><option value="Mythic">Mythic</option><option value="Mythic Honor">Mythic Honor</option><option value="Mythic Glory">Mythic Glory</option><option value="Immortal">Immortal</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-[10px] text-slate-400 mb-1">Pemisah Kolom</label>
                         <select id="genDelimiter" onchange="parseBulkText()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-slate-200 outline-none">
-                            <option value="AUTO">AUTO DETECT</option>
-                            <option value="|">Garis Tegak (|)</option>
-                            <option value=",">Koma (,)</option>
-                            <option value=":">Titik Dua (:)</option>
+                            <option value="AUTO">AUTO DETECT</option><option value="|">Garis Tegak (|)</option><option value=",">Koma (,)</option><option value=":">Titik Dua (:)</option>
                         </select>
                     </div>
                     <div class="col-span-2">
@@ -607,31 +611,21 @@
 
         let db = null;
         let auth = null;
-        let appId = typeof __app_id !== 'undefined' ? __app_id : 'stoknanz-cloud-v1';
+        const appId = 'stoknanz-cloud-v1';
 
         window.addEventListener('firebase-ready', async () => {
             const fb = window.firebaseModules;
-            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-            
-            const app = fb.initializeApp(firebaseConfig);
-            db = fb.getFirestore(app);
-            auth = fb.getAuth(app);
+            db = fb.db;
+            auth = fb.auth;
 
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await fb.signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await fb.signInAnonymously(auth);
-                }
-            } catch(e) {
                 await fb.signInAnonymously(auth);
-            }
+            } catch(e) {}
 
             initCloudListeners();
             checkAuthentication();
         });
 
-        // Fallback if firebase script takes time or offline
         setTimeout(() => {
             if (!auth && !currentUser) {
                 checkAuthentication();
@@ -648,7 +642,6 @@
                 users = [];
                 snapshot.forEach(docSnap => users.push({ id: docSnap.id, ...docSnap.data() }));
                 if (users.length === 0) {
-                    // Default Owner
                     const defaultOwner = { id: 'usr_owner', name: 'Owner Utama', username: 'owner', password: 'admin123', role: 'owner' };
                     fb.setDoc(fb.doc(db, 'artifacts', appId, 'public', 'data', 'users', defaultOwner.id), defaultOwner);
                 }
@@ -700,7 +693,6 @@
             const usernameInput = document.getElementById('loginUsername').value.trim().toLowerCase();
             const passwordInput = document.getElementById('loginPassword').value.trim();
             
-            // If cloud listeners not loaded yet, check local fallback
             if (users.length === 0) {
                 users = [{ id: 'usr_owner', name: 'Owner Utama', username: 'owner', password: 'admin123', role: 'owner' }];
             }
@@ -755,12 +747,6 @@
             await fb.setDoc(fb.doc(db, 'artifacts', appId, 'public', 'data', 'trash', acc.id), acc);
         }
 
-        async function cloudDeleteTrash(id) {
-            if (!db) return;
-            const fb = window.firebaseModules;
-            await fb.deleteDoc(fb.doc(db, 'artifacts', appId, 'public', 'data', 'trash', id));
-        }
-
         async function addLog(action, detail) {
             if (!currentUser || !db) return;
             const fb = window.firebaseModules;
@@ -779,7 +765,7 @@
             if (logs.length > 0) {
                 latestText.innerHTML = `<b class="text-cyanbrand-400">[${logs[0].action}]</b> ${escapeHtml(logs[0].detail)} <span class="text-slate-500">(${escapeHtml(logs[0].by || '')})</span>`;
             } else {
-                latestText.innerText = 'Cloud Sync Aktif - Belum ada aktivitas.';
+                latestText.innerText = 'Firebase Cloud Sync Aktif - Siap digunakan.';
             }
 
             const logsList = document.getElementById('logsContainerList');
@@ -882,7 +868,7 @@
 
             await addLog('BATCH GENERATOR', `Upload ${parsedGeneratorData.length} akun ke cloud.`);
             closeGeneratorModal();
-            showToast('Berhasil upload akun ke Cloud Database!');
+            showToast('Berhasil upload akun ke Firebase Cloud!');
             document.getElementById('genRawInput').value = '';
         }
 
@@ -1042,7 +1028,7 @@
             }
             document.getElementById('accountModal').classList.remove('hidden');
         }
-        function closeModal() { document.getElementById('accountModal'].classList.add('hidden'); }
+        function closeModal() { document.getElementById('accountModal').classList.add('hidden'); }
         function toggleCustomDateInput() {
             const status = document.querySelector('input[name="statusOption"]:checked')?.value;
             document.getElementById('customCooldownContainer').classList.toggle('hidden', status !== 'CD_CUSTOM');
@@ -1111,7 +1097,6 @@
             const tbody = document.getElementById('userListTableBody');
             tbody.innerHTML = '';
             users.forEach(u => {
-                // Hitung berapa banyak akun yang ditambahkan user ini
                 const countAcc = accounts.filter(a => a.addedBy === u.username).length;
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -1191,4 +1176,4 @@
         function escapeJsString(str) { return !str ? '' : str.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
     </script>
 </body>
-                    </html>
+    </html>
