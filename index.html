@@ -1,4 +1,3 @@
-Saya akan menambahkan tombol "Hapus Semua" dan logika JavaScript-nya agar Anda dapat menghapus semua akun yang sedang ditampilkan di list (berdasarkan filter folder, rank, dan pencarian saat ini).
 <!DOCTYPE html>
 <html lang="id" class="dark">
 <head>
@@ -300,14 +299,7 @@ Saya akan menambahkan tombol "Hapus Semua" dan logika JavaScript-nya agar Anda d
             <div class="flex items-center gap-1.5 shrink-0">
                 <button onclick="copyCurrentListBatch()" title="Copy Semua Credential / Dev ID yang Tampil" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition">
                     <i class="fa-regular fa-copy text-cyanbrand-400"></i> <span class="hidden xs:inline">Copy Massal</span>
-                </button></comment-tag id="1" text="Tambahkan tombol 'Hapus Semua' di sebelah tombol 'Copy Massal' untuk memberikan fitur menghapus semua akun yang sedang difilter.
-
-'<button onclick=&quot;copyCurrentListBatch()&quot; title=&quot;Copy Semua Credential / Dev ID yang Tampil&quot; class=&quot;text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition&quot;>
-                    <i class=&quot;fa-regular fa-copy text-cyanbrand-400&quot;></i> <span class=&quot;hidden xs:inline&quot;>Copy Massal</span>
                 </button>
-                <button onclick=&quot;deleteAllCurrentList()&quot; title=&quot;Hapus Semua Akun yang Tampil&quot; class=&quot;text-xs bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-2.5 sm:px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition&quot;>
-                    <i class=&quot;fa-solid fa-trash-can text-red-400&quot;></i> <span class=&quot;hidden xs:inline&quot;>Hapus Semua</span>
-                </button>'" type="suggestion">
                 <span id="accountCountBadge" class="text-xs bg-slate-800 text-cyanbrand-400 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-700">0 Data</span>
             </div>
         </div>
@@ -969,50 +961,7 @@ Saya akan menambahkan tombol "Hapus Semua" dan logika JavaScript-nya agar Anda d
                 await addLog('HAPUS', `Membuang ${acc.credential} ke sampah.`);
                 showToast('Akun dipindahkan ke Sampah Cloud');
             }
-        }</comment-tag id="2" text="Tambahkan fungsi `deleteAllCurrentList` untuk menangani logika penghapusan semua akun yang sedang ditampilkan sesuai dengan filter saat ini. Fungsi ini memindahkan akun-akun tersebut ke folder sampah.
-
-'async function moveToTrash(id) {
-            const acc = accounts.find(a => a.id === id);
-            if (acc) {
-                await cloudDeleteAccount(id);
-                await cloudSaveTrash(acc);
-                await addLog(\'HAPUS\', `Membuang ${acc.credential} ke sampah.`);
-                showToast(\'Akun dipindahkan ke Sampah Cloud\');
-            }
         }
-
-        async function deleteAllCurrentList() {
-            const search = document.getElementById(\'searchInput\').value.toLowerCase();
-            const now = new Date();
-            
-            let filtered = accounts.filter(acc => {
-                let isReady = acc.statusType === \'READY\';
-                if (!isReady && acc.cooldownEnd && new Date(acc.cooldownEnd) <= now) isReady = true;
-
-                const matchesSearch = (acc.credential || \'\').toLowerCase().includes(search) || (acc.nickname || \'\').toLowerCase().includes(search) || (acc.accId || \'\').toLowerCase().includes(search);
-                let matchesFolder = currentFolderFilter === \'READY\' ? isReady : (acc.statusType === currentFolderFilter && !isReady);
-                let matchesRank = currentRankFilter === \'ALL\' || acc.rank === currentRankFilter;
-
-                return matchesSearch && matchesFolder && matchesRank;
-            });
-
-            if (filtered.length === 0) {
-                showToast(\'Tidak ada data untuk dihapus\');
-                return;
-            }
-
-            if (confirm(`Yakin ingin menghapus ${filtered.length} akun yang tampil ke tempat sampah?`)) {
-                showToast(\'Sedang menghapus data...\');
-                let count = 0;
-                for (const acc of filtered) {
-                    await cloudDeleteAccount(acc.id);
-                    await cloudSaveTrash(acc);
-                    count++;
-                }
-                await addLog(\'HAPUS MASSAL\', `Menghapus ${count} akun ke sampah.`);
-                showToast(`Berhasil menghapus ${count} akun ke sampah`);
-            }
-        }'" type="suggestion">
 
         function openTrashModal() {
             const tbody = document.getElementById('trashTableBody');
@@ -1228,6 +1177,3 @@ Saya akan menambahkan tombol "Hapus Semua" dan logika JavaScript-nya agar Anda d
     </script>
 </body>
     </html>
-```eof
-_Suggestions added_
-
